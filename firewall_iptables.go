@@ -576,9 +576,8 @@ func (a *IptablesChain) merge(b *IptablesChain) error {
 func (s *IptablesManager) command() string {
     if s.Ipv6 {
         return "ip6tables"
-    } else {
-        return "iptables"
     }
+    return "iptables"
 }
 
 func (s *IptablesManager) apply(current *IptablesState, basedir string) error {
