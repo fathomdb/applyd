@@ -360,6 +360,16 @@ func (s *IptablesManager) Save(basedir string) (err error) {
 }
 
 func (s *IptablesManager) Apply(basedir string) (err error) {
+    isdir, err := gommons.IsDirectory(basedir)
+    if err != nil {
+        return err
+    }
+
+    if !isdir {
+        log.Printf("iptables: Directory not found; skipping %s", basedir)
+        return nil
+    }
+
     current, err := iptablesSave(s.Ipv6)
     if err != nil {
         return err

@@ -215,6 +215,16 @@ func (s *IpNeighborProxyManager) apply(state *IpNeighborProxyState, basedir stri
 }
 
 func (s *IpNeighborProxyManager) Apply(basedir string) (err error) {
+    isdir, err := gommons.IsDirectory(basedir)
+    if err != nil {
+        return err
+    }
+
+    if !isdir {
+        log.Printf("ip6neigh: Directory not found; skipping %s", basedir)
+        return nil
+    }
+
     //	ipsetState, err := ipsetSave(nil)
     //	if err != nil {
     //		return err

@@ -328,6 +328,17 @@ func (s *IpsetManager) Save(basedir string) (err error) {
 }
 
 func (s *IpsetManager) Apply(basedir string) (err error) {
+    isdir, err := gommons.IsDirectory(basedir)
+
+    if err != nil {
+        return err
+    }
+
+    if !isdir {
+        log.Printf("ipset: Directory not found; skipping %s", basedir)
+        return nil
+    }
+
     ipsetState, err := ipsetSave(nil)
     if err != nil {
         return err
