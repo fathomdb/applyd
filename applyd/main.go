@@ -48,4 +48,9 @@ func main() {
     if err != nil {
         log.Panicf("Error applying state %v", err)
     }
+
+    err = runtime.Vips.Apply("/etc/apply.d/vips")
+    if err != nil {
+        log.Panicf("Error applying vips %v", err)
+    }
 }
