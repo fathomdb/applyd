@@ -48,16 +48,14 @@ func NewVipsManager(runtime *Runtime) *VipsManager {
 
 func parseIp(s string) (ip net.IP, err error) {
     if strings.Contains(s, "/") {
-        ip, _, err := net.ParseCIDR(s)
+        ip, _, err = net.ParseCIDR(s)
         if err != nil {
             return nil, err
         }
-
-        return ip, nil
     } else {
-        ip := net.ParseIP(s)
-        return ip, nil
+        ip = net.ParseIP(s)
     }
+    return ip, nil
 }
 
 func hasIp(dev string, ip net.IP) (found bool, err error) {
