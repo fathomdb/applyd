@@ -591,7 +591,7 @@ func (s *IptablesManager) command() string {
 }
 
 func (s *IptablesManager) apply(current *IptablesState, basedir string) error {
-    files, err := gommons.ListDirectory(basedir)
+    files, err := gommons.ListDirectoryNames(basedir)
     if err != nil {
         log.Printf("Error listing files in dir %s: %v", basedir, err)
         return err
@@ -600,8 +600,7 @@ func (s *IptablesManager) apply(current *IptablesState, basedir string) error {
     var desired *IptablesState
 
     for _, file := range files {
-        key := file.Name()
-        path := basedir + "/" + key
+        path := basedir + "/" + file
 
         state, err := readIptablesFile(current.Ipv6, path)
         if err != nil {

@@ -153,7 +153,10 @@ func (s *IpNeighborProxy) apply() (err error) {
         cmd.Args = append(cmd.Args, "dev", s.Device)
     }
 
-    if _, err = cmd.CombinedOutput(); err != nil {
+    if output, err := cmd.CombinedOutput(); err != nil {
+        log.Printf("Failed to run command: %s", cmd)
+        log.Printf("Output: %s", output)
+
         return fmt.Errorf("Error running neighbour proxy command: %s", err)
     }
 
@@ -186,15 +189,14 @@ func (s *IpNeighborProxyState) apply() (err error) {
 }
 
 func (s *IpNeighborProxyManager) apply(state *IpNeighborProxyState, basedir string) error {
-    files, err := gommons.ListDirectory(basedir)
+    files, err := gommons.ListDirectoryNames(basedir)
     if err != nil {
         log.Printf("ipset: Error listing files in dir %s: %v", basedir, err)
         return err
     }
 
     for _, file := range files {
-        key := file.Name()
-        path := basedir + "/" + key
+        path := basedir + "/" + file
 
         state, err := s.readFile(path)
         if err != nil {
@@ -203,7 +205,7 @@ func (s *IpNeighborProxyManager) apply(state *IpNeighborProxyState, basedir stri
 
         // Configuration needs to be applied
         // There's no way to find out the current config!
-        log.Printf("ip neigh: Applying %s", key)
+        log.Printf("ip neigh: Applying %s", file)
 
         err = state.apply()
         if err != nil {

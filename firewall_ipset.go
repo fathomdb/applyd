@@ -263,7 +263,7 @@ func (s *Ipset) apply() (err error) {
 }
 
 func (s *IpsetManager) ipsetApply(state *IpsetState, basedir string) error {
-    files, err := gommons.ListDirectory(basedir)
+    files, err := gommons.ListDirectoryNames(basedir)
     if err != nil {
         log.Printf("ipset: Error listing files in dir %s: %v", basedir, err)
         return err
@@ -275,8 +275,7 @@ func (s *IpsetManager) ipsetApply(state *IpsetState, basedir string) error {
         existingIpsets[k] = v
     }
 
-    for _, file := range files {
-        key := file.Name()
+    for _, key := range files {
         path := basedir + "/" + key
 
         fileIpset, err := readIpsetFile(key, path)
