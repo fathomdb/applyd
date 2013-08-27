@@ -1,2 +1,4 @@
 pygments: true
 markdown: redcarpet
+
+repository_url: https://github.com/fathomdb/applyd
