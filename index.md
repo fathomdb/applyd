@@ -21,7 +21,7 @@ Create multiple files, and applyd intelligently combines them before applying an
 
 ApplyD currently supports:
 
-* iptables & ip6tables
+* [iptables][] & [ip6tables][]
 * ipsets
 * IPV6 Neighbor Proxies (ip -6 neigh)
 * Virtual IPs (ip addr add)
@@ -58,3 +58,6 @@ Yes, but:
 
     > ApplyD is a bridge, until distros support .d configuration for iptables etc. 
 
+
+[iptables]: iptables.html
+[ip6tables]: iptables.html
