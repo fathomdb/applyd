@@ -153,11 +153,9 @@ func (s *IpNeighborProxy) apply() (err error) {
         cmd.Args = append(cmd.Args, "dev", s.Device)
     }
 
-    if output, err := cmd.CombinedOutput(); err != nil {
-        log.Printf("Failed to run command: %s", cmd)
-        log.Printf("Output: %s", output)
-
-        return fmt.Errorf("Error running neighbour proxy command: %s", err)
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
     }
 
     return nil

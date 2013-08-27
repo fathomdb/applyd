@@ -217,10 +217,9 @@ func iptablesSave(ipv6 bool) (*IptablesState, error) {
 
     cmd := exec.Command(name)
 
-    output, err := cmd.CombinedOutput()
+    output, err := Execute(cmd)
     if err != nil {
-        log.Printf("Output: %s", output)
-        return nil, fmt.Errorf("Error running %s: %s", name, err)
+        return nil, err
     }
 
     return parseIptablesSave(ipv6, string(output))
@@ -330,11 +329,9 @@ func iptablesRestore(ipv6 bool, conf string) (err error) {
 
     cmd.Stdin = bytes.NewBufferString(conf)
 
-    if output, err := cmd.CombinedOutput(); err != nil {
-        log.Printf("Failed %s: %s", name, conf)
-        log.Printf("Output: %s", output)
-
-        return fmt.Errorf("Error running iptables restore: %s", err)
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
     }
 
     return nil

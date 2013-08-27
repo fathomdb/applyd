@@ -30,13 +30,10 @@ func NewVipsManager(runtime *Runtime) *VipsManager {
 //func hasIp(dev string, ip string) (found bool, err error) {
 //	cmd := exec.Command("/bin/ip", "address", "show", "dev", dev, "to", ip)
 //
-//	output, err := cmd.CombinedOutput()
-//	if err != nil {
-//		log.Printf("Failed %s", cmd)
-//		log.Printf("Output: %s", output)
-//
-//		return false, fmt.Errorf("Error running ip command: %s", err)
-//	}
+//	output, err := Execute(cmd)
+//    if err != nil {
+//	    return err
+//    }
 //
 //	result := strings.TrimSpace(string(output))
 //	if result == "" {
@@ -109,12 +106,9 @@ func addIp(dev string, ip string) (err error) {
 
     cmd := exec.Command("/bin/ip", "address", "add", ip, "dev", dev)
 
-    output, err := cmd.CombinedOutput()
+    _, err = Execute(cmd)
     if err != nil {
-        log.Printf("Failed %s", cmd)
-        log.Printf("Output: %s", output)
-
-        return fmt.Errorf("Error running ip command: %s", err)
+        return err
     }
 
     return nil
@@ -125,12 +119,9 @@ func deleteIp(dev string, ip string) (err error) {
 
     cmd := exec.Command("/bin/ip", "address", "delete", ip, "dev", dev)
 
-    output, err := cmd.CombinedOutput()
+    _, err = Execute(cmd)
     if err != nil {
-        log.Printf("Failed %s", cmd)
-        log.Printf("Output: %s", output)
-
-        return fmt.Errorf("Error running ip command: %s", err)
+        return err
     }
 
     return nil

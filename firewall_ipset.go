@@ -63,9 +63,9 @@ func ipsetSave(ruleset *string) (*IpsetState, error) {
         cmd.Args = append(cmd.Args, *ruleset)
     }
 
-    output, err := cmd.CombinedOutput()
+    output, err := Execute(cmd)
     if err != nil {
-        return nil, fmt.Errorf("Error running ipset save: %s", err)
+        return nil, err
     }
 
     return parseIpset(string(output))
@@ -160,8 +160,9 @@ func ipsetRestore(conf string, merge bool) (err error) {
     //	defer f.Close()
     cmd.Stdin = bytes.NewBufferString(conf)
 
-    if _, err = cmd.CombinedOutput(); err != nil {
-        return fmt.Errorf("Error running ipset restore: %s", err)
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
     }
 
     return nil
@@ -170,8 +171,9 @@ func ipsetRestore(conf string, merge bool) (err error) {
 func ipsetSwap(a, b string) (err error) {
     cmd := exec.Command("/usr/sbin/ipset", "swap", a, b)
 
-    if _, err = cmd.CombinedOutput(); err != nil {
-        return fmt.Errorf("Error running ipset swap: %s", err)
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
     }
 
     return nil
@@ -180,8 +182,9 @@ func ipsetSwap(a, b string) (err error) {
 func ipsetDestroy(name string) (err error) {
     cmd := exec.Command("/usr/sbin/ipset", "destroy", name)
 
-    if _, err = cmd.CombinedOutput(); err != nil {
-        return fmt.Errorf("Error running ipset destroy: %s", err)
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
     }
 
     return nil

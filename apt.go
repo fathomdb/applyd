@@ -24,9 +24,9 @@ func NewPackageManager(runtime *Runtime) *PackageManager {
 
 func (*PackageManager) List() ([]*PackageInfo, error) {
     cmd := exec.Command("/usr/bin/dpkg", "--get-selections")
-    output, err := cmd.CombinedOutput()
+    output, err := Execute(cmd)
     if err != nil {
-        return nil, fmt.Errorf("Error running dpkg: %s", err)
+        return nil, err
     }
 
     ret := []*PackageInfo{}
@@ -55,9 +55,9 @@ func (*PackageManager) Install(packages ...string) ([]*PackageInfo, error) {
     cmd := exec.Command("apt-get", "install", "--yes")
     cmd.Args = append(cmd.Args, packages...)
 
-    output, err := cmd.CombinedOutput()
+    output, err := Execute(cmd)
     if err != nil {
-        return nil, fmt.Errorf("Error running apt-get install: %s", err)
+        return nil, err
     }
 
     log.Printf("Output from install: %s", output)
