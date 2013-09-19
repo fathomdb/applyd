@@ -70,8 +70,20 @@ func (s *IptablesChain) normalize(ipv6 bool) (err error) {
     return nil
 }
 
+func indexOf(haystack []string, needle string) (position int) {
+    for i, v := range haystack {
+        if v == needle {
+            return i
+        }
+    }
+    return -1
+}
+
 func (s *IptablesRule) normalize(ipv6 bool) (err error) {
     fields := strings.Fields(s.Spec)
+
+    sortkeys := []string{"-p", "-m", "-i", "-o", "-d", "--dport", "-s", "-j"}
+    sortmap := make(map[string]string)
 
     i := 0
     for i < len(fields) {
@@ -82,6 +94,11 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
                 if protocol == "icmpv6" {
                     fields[i+1] = "ipv6-icmp"
                 }
+
+                sortmap[f] = fields[i+1]
+                fields[i] = ""
+                fields[i+1] = ""
+
                 i++
             }
         } else if f == "-d" || f == "-s" {
@@ -102,6 +119,18 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
                     fields[i+1] = addr
                 }
 
+                sortmap[f] = fields[i+1]
+                fields[i] = ""
+                fields[i+1] = ""
+
+                i++
+            }
+        } else if indexOf(sortkeys, f) != -1 {
+            if (i + 1) < len(fields) {
+                sortmap[f] = fields[i+1]
+                fields[i] = ""
+                fields[i+1] = ""
+
                 i++
             }
         }
@@ -120,7 +149,22 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
         i++
     }
 
-    s.Spec = strings.Join(f2[0:i], " ")
+    spec := ""
+
+    for _, key := range sortkeys {
+        v := sortmap[key]
+        if v != "" {
+            if spec != "" {
+                spec = spec + " "
+            }
+            spec = spec + key + " " + v
+        }
+    }
+
+    spec = spec + strings.Join(f2[0:i], " ")
+    s.Spec = spec
+
+    //fmt.Println(s.Spec)
 
     return nil
 }
