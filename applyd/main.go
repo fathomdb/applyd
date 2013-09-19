@@ -53,4 +53,9 @@ func main() {
     if err != nil {
         log.Panicf("Error applying vips %v", err)
     }
+
+    err = runtime.Tunnels.Apply("/etc/apply.d/tunnels")
+    if err != nil {
+        log.Panicf("Error applying tunnels %v", err)
+    }
 }

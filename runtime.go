@@ -7,6 +7,7 @@ type Runtime struct {
     Firewall    *FirewallManager
     IpNeighbors *IpNeighborProxyManager
     Vips        *VipsManager
+    Tunnels     *TunnelsManager
 }
 
 func NewRuntime() (*Runtime, error) {
@@ -16,6 +17,7 @@ func NewRuntime() (*Runtime, error) {
     runtime.Firewall = NewFirewallManager(runtime)
     runtime.IpNeighbors = NewIpNeighborProxyManager(runtime)
     runtime.Vips = NewVipsManager(runtime)
+    runtime.Tunnels = NewTunnelsManager(runtime)
 
     return runtime, nil
 }
