@@ -162,7 +162,7 @@ func (s *IpNeighborProxy) apply() (err error) {
 }
 
 func (s *IpNeighborProxyManager) readFile(path string) (*IpNeighborProxyState, error) {
-    text, err := gommons.TryReadFile(path, "")
+    text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return nil, err
     }

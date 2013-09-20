@@ -107,7 +107,7 @@ func parseTunnel(line string) (t *Tunnel, err error) {
 }
 
 func readTunnelFile(name string, path string) (tunnel *Tunnel, err error) {
-    text, err := gommons.TryReadFile(path, "")
+    text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return nil, err
     }

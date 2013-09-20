@@ -149,7 +149,7 @@ func deleteIp(dev string, ip string) (err error) {
 // TODO: We could probably be more efficient here by using a similar strategy to iptables: collect in bulk
 // But, parsing the ip addr show output is painful!
 func (s *VipsManager) applyFile(key string, path string) error {
-    text, err := gommons.TryReadFile(path, "")
+    text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return err
     }

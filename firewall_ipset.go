@@ -196,7 +196,7 @@ func (*IpsetManager) createFiles(state *IpsetState, basedir string) error {
 
         conf := ipset.buildConf(nil)
 
-        f, err := gommons.TryReadFile(path, "")
+        f, err := gommons.TryReadTextFile(path, "")
         if err != nil {
             return err
         }
@@ -215,7 +215,7 @@ func (*IpsetManager) createFiles(state *IpsetState, basedir string) error {
 }
 
 func readIpsetFile(name string, path string) (state *Ipset, err error) {
-    text, err := gommons.TryReadFile(path, "")
+    text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return nil, err
     }

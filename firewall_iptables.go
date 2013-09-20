@@ -430,7 +430,7 @@ func (*IptablesManager) createFiles(state *IptablesState, basedir string) error 
         return err
     }
 
-    f, err := gommons.TryReadFile(path, "")
+    f, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return err
     }
@@ -448,7 +448,7 @@ func (*IptablesManager) createFiles(state *IptablesState, basedir string) error 
 }
 
 func readIptablesFile(ipv6 bool, path string) (state *IptablesState, err error) {
-    text, err := gommons.TryReadFile(path, "")
+    text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
         return nil, err
     }
