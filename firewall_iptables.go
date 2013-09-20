@@ -154,15 +154,12 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
     for _, key := range sortkeys {
         v := sortmap[key]
         if v != "" {
-            if spec != "" {
-                spec = spec + " "
-            }
-            spec = spec + key + " " + v
+            spec = spec + " " + key + " " + v
         }
     }
 
-    spec = spec + strings.Join(f2[0:i], " ")
-    s.Spec = spec
+    spec = spec + " " + strings.Join(f2[0:i], " ")
+    s.Spec = strings.Trim(spec, " ")
 
     //fmt.Println(s.Spec)
 
