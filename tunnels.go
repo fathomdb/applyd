@@ -196,6 +196,19 @@ func (s *Tunnel) apply() (err error) {
     return nil
 }
 
+func (s *Tunnel) ipLinkUp() (err error) {
+    log.Printf("tunnel: bringing link up %s", s.Name)
+
+    cmd := exec.Command("/sbin/ip", "-6", "link", "set", s.Name, "up")
+
+    _, err = Execute(cmd)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func (s *TunnelsManager) apply(state *TunnelsState, basedir string) error {
     files, err := gommons.ListDirectoryNames(basedir)
     if err != nil {
@@ -230,7 +243,14 @@ func (s *TunnelsManager) apply(state *TunnelsState, basedir string) error {
         // Configuration needs to be applied
         log.Printf("tunnel: Applying changed configuration from disk: %s", key)
 
-        fileTunnel.apply()
+        err = fileTunnel.apply()
+        if err != nil {
+            return err
+        }
+        err = fileTunnel.ipLinkUp()
+        if err != nil {
+            return err
+        }
     }
 
     for k, _ := range existingTunnels {
