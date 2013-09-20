@@ -43,6 +43,11 @@ func NewVipsManager(runtime *Runtime) *VipsManager {
 //	return true, nil
 //}
 
+func isIpv4(ip net.IP) bool {
+    ipv4 := ip.To4()
+    return ipv4 != nil
+}
+
 func parseIp(s string) (ip net.IP, err error) {
     if strings.Contains(s, "/") {
         ip, _, err = net.ParseCIDR(s)
@@ -104,7 +109,14 @@ func findIp(ip net.IP) (found string, err error) {
 func addIp(dev string, ip string) (err error) {
     log.Printf("vips: Adding %s %s", dev, ip)
 
-    cmd := exec.Command("/bin/ip", "address", "add", ip, "dev", dev)
+    args := make([]string, 0)
+    if strings.Contains(ip, ":") {
+        args = append(args, "-6")
+    }
+
+    args = append(args, "address", "add", ip, "dev", dev)
+
+    cmd := exec.Command("/bin/ip", args...)
 
     _, err = Execute(cmd)
     if err != nil {
@@ -117,7 +129,14 @@ func addIp(dev string, ip string) (err error) {
 func deleteIp(dev string, ip string) (err error) {
     log.Printf("vips: Deleting %s %s", dev, ip)
 
-    cmd := exec.Command("/bin/ip", "address", "delete", ip, "dev", dev)
+    args := make([]string, 0)
+    if strings.Contains(ip, ":") {
+        args = append(args, "-6")
+    }
+
+    args = append(args, "address", "delete", ip, "dev", dev)
+
+    cmd := exec.Command("/bin/ip", args...)
 
     _, err = Execute(cmd)
     if err != nil {
@@ -128,6 +147,7 @@ func deleteIp(dev string, ip string) (err error) {
 }
 
 // TODO: We could probably be more efficient here by using a similar strategy to iptables: collect in bulk
+// But, parsing the ip addr show output is painful!
 func (s *VipsManager) applyFile(key string, path string) error {
     text, err := gommons.TryReadFile(path, "")
     if err != nil {
@@ -155,8 +175,11 @@ func (s *VipsManager) applyFile(key string, path string) error {
     }
 
     if ipString == "" {
-        // TODO: Check it is IPv4
-        ipString = key + "/32"
+        if strings.Contains(ipString, ":") {
+            ipString = key + "/128"
+        } else {
+            ipString = key + "/32"
+        }
     }
 
     ip, err := parseIp(ipString)
