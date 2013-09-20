@@ -58,4 +58,15 @@ func main() {
     if err != nil {
         log.Panicf("Error applying tunnels %v", err)
     }
+
+    err = runtime.Routes4.Apply("/etc/apply.d/route4")
+    if err != nil {
+        log.Panicf("Error applying ipv4 routes %v", err)
+    }
+
+    err = runtime.Routes6.Apply("/etc/apply.d/route6")
+    if err != nil {
+        log.Panicf("Error applying ipv6 routes %v", err)
+    }
+
 }
