@@ -252,6 +252,8 @@ func (s *RoutesManager) apply(state *RoutesState, basedir string) error {
             } else {
                 log.Printf("Configuration mismatch: %s %s", existingRoute, fileRoute)
             }
+        } else {
+            log.Printf("Adding new route: %s", key)
         }
 
         // Configuration needs to be applied
