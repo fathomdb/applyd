@@ -247,8 +247,10 @@ func (s *RoutesManager) apply(state *RoutesState, basedir string) error {
             delete(existingRoutes, key)
 
             if routeMatch(existingRoute, fileRoute) {
-                log.Printf("Configuration match: %s", filename)
+                //log.Printf("Configuration match: %s", filename)
                 continue
+            } else {
+                log.Printf("Configuration mismatch: %s %s", existingRoute, fileRoute)
             }
         }
 
