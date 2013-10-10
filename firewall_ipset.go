@@ -86,10 +86,15 @@ func stringSliceEquals(a []string, b []string) bool {
 
 func ipsetMatch(a *Ipset, b *Ipset) bool {
     if a.Spec != b.Spec {
+        log.Printf("Spec mismatch on ipset: %v vs %v", a.Spec, b.Spec)
         return false
     }
 
+    sort.Strings(a.Members)
+    sort.Strings(b.Members)
+
     if !stringSliceEquals(a.Members, b.Members) {
+        log.Printf("Members mismatch on ipset")
         return false
     }
 
@@ -237,29 +242,40 @@ func readIpsetFile(name string, path string) (state *Ipset, err error) {
     return ipset, nil
 }
 
-func (s *Ipset) apply() (err error) {
+func (s *Ipset) apply(usetemp bool) (err error) {
     // We can't merge; otherwise we can't delete entries
     // We can't delete in case it is in use
 
     // So we create a new ruleset and then atomically swap them
 
-    tmpname := fmt.Sprintf("_apply_tmp_%x", rand.Int63())
+    if usetemp {
+        tmpname := fmt.Sprintf("_applyd_tmp_%x", rand.Int63())
 
-    conf := s.buildConf(&tmpname)
+        log.Printf("Creating temp rule and atomically renaming: %v", tmpname)
 
-    err = ipsetRestore(conf, false)
-    if err != nil {
-        return err
-    }
+        conf := s.buildConf(&tmpname)
 
-    err = ipsetSwap(tmpname, s.Name)
-    if err != nil {
-        return err
-    }
+        err = ipsetRestore(conf, false)
+        if err != nil {
+            return err
+        }
 
-    err = ipsetDestroy(tmpname)
-    if err != nil {
-        return err
+        err = ipsetSwap(tmpname, s.Name)
+        if err != nil {
+            return err
+        }
+
+        err = ipsetDestroy(tmpname)
+        if err != nil {
+            return err
+        }
+    } else {
+        conf := s.buildConf(nil)
+
+        err = ipsetRestore(conf, false)
+        if err != nil {
+            return err
+        }
     }
 
     return nil
@@ -299,7 +315,8 @@ func (s *IpsetManager) ipsetApply(state *IpsetState, basedir string) error {
         // Configuration needs to be applied
         log.Printf("ipset: Applying changed configuration from disk: %s", key)
 
-        fileIpset.apply()
+        usetemp := existingIpset != nil
+        fileIpset.apply(usetemp)
     }
 
     for k, _ := range existingIpsets {

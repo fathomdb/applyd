@@ -4,10 +4,14 @@ import (
     "flag"
     "github.com/fathomdb/applyd"
     "log"
+    "math/rand"
     "os"
+    "time"
 )
 
 func main() {
+    rand.Seed(time.Now().UTC().UnixNano())
+
     flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
     err := flags.Parse(os.Args[1:])

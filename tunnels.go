@@ -37,11 +37,14 @@ func parseTunnel(line string) (t *Tunnel, err error) {
 
     t = &Tunnel{}
 
-    mode := fields[0]
-    if mode == "ipv6/ipv6" {
-        t.Mode = "ip6ip6"
-    } else {
-        return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+    modemap := make(map[string]string)
+    modemap["ipv6/ipv6"] = "ip6ip6"
+    modemap["ip6ip6"] = "ip6ip6"
+
+    t.Mode = modemap[fields[0]]
+
+    if t.Mode == "" {
+        return nil, fmt.Errorf("Error parsing tunnel spec (mode): %s", line)
     }
 
     i := 1
@@ -52,52 +55,52 @@ func parseTunnel(line string) (t *Tunnel, err error) {
                 t.Remote = fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (remote): %s", line)
             }
         } else if f == "local" {
             if (i + 1) < len(fields) {
                 t.Local = fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (local): %s", line)
             }
         } else if f == "encaplimit" {
             if (i + 1) < len(fields) {
                 //t.encaplimit := fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (encaplimit): %s", line)
             }
         } else if f == "hoplimit" {
             if (i + 1) < len(fields) {
                 //t.hoplimit := fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (hoplimit): %s", line)
             }
         } else if f == "tclass" {
             if (i + 1) < len(fields) {
                 //t.tclass := fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (tclass): %s", line)
             }
         } else if f == "flowlabel" {
             if (i + 1) < len(fields) {
                 //t.flowlabel := fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (flowlabel): %s", line)
             }
         } else if f == "(flowinfo" {
             if (i + 1) < len(fields) {
                 //t.flowinfo := fields[i+1]
                 i++
             } else {
-                return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+                return nil, fmt.Errorf("Error parsing tunnel spec (flowinfo): %s", line)
             }
         } else {
-            return nil, fmt.Errorf("Error parsing tunnel spec: %s", line)
+            return nil, fmt.Errorf("Error parsing tunnel spec (unknown key): %s", line)
         }
 
         i++

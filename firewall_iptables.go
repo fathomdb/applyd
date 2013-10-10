@@ -86,48 +86,25 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
     sortmap := make(map[string]string)
 
     i := 0
+    negated := false
     for i < len(fields) {
         f := fields[i]
-        if f == "-p" {
+
+        if f == "!" {
+            negated = true
+            fields[i] = ""
+            continue
+        }
+
+        if indexOf(sortkeys, f) != -1 {
             if (i + 1) < len(fields) {
-                protocol := fields[i+1]
-                if protocol == "icmpv6" {
-                    fields[i+1] = "ipv6-icmp"
+                if negated {
+                    sortmap[f] = "! " + fields[i+1]
+                    negated = false
+                } else {
+                    sortmap[f] = fields[i+1]
                 }
 
-                sortmap[f] = fields[i+1]
-                fields[i] = ""
-                fields[i+1] = ""
-
-                i++
-            }
-        } else if f == "-d" || f == "-s" {
-            if (i + 1) < len(fields) {
-                addr := fields[i+1]
-                if !strings.Contains(addr, "/") {
-                    if ipv6 {
-                        addr = addr + "/128"
-                    } else {
-                        addr = addr + "/32"
-                    }
-                    fields[i+1] = addr
-                }
-
-                if addr == "0.0.0.0/0" {
-                    fields[i] = ""
-                    addr = ""
-                    fields[i+1] = addr
-                }
-
-                sortmap[f] = fields[i+1]
-                fields[i] = ""
-                fields[i+1] = ""
-
-                i++
-            }
-        } else if indexOf(sortkeys, f) != -1 {
-            if (i + 1) < len(fields) {
-                sortmap[f] = fields[i+1]
                 fields[i] = ""
                 fields[i+1] = ""
 
@@ -135,7 +112,48 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
             }
         }
 
+        if negated {
+            return fmt.Errorf("Cannot parse rule: %s", s.Spec)
+        }
+
         i++
+    }
+
+    // Normalize protocol
+    protocol := sortmap["-p"]
+    if protocol == "icmpv6" {
+        sortmap["-p"] = "ipv6-icmp"
+    }
+
+    // Normalize addresses
+    for _, addrkey := range []string{"-d", "-s"} {
+        addr := sortmap[addrkey]
+        if addr == "" {
+            continue
+        }
+
+        if !strings.Contains(addr, "/") {
+            if ipv6 {
+                addr = addr + "/128"
+            } else {
+                addr = addr + "/32"
+            }
+        }
+
+        ignore := false
+        if addr == "0.0.0.0/0" {
+            ignore = true
+        }
+
+        if addr == "::/0" {
+            ignore = true
+        }
+
+        if ignore {
+            delete(sortmap, addrkey)
+        } else {
+            sortmap[addrkey] = addr
+        }
     }
 
     // Remove any empty strings
@@ -151,11 +169,20 @@ func (s *IptablesRule) normalize(ipv6 bool) (err error) {
 
     spec := ""
 
+    // Add the keys in order
     for _, key := range sortkeys {
         v := sortmap[key]
-        if v != "" {
-            spec = spec + " " + key + " " + v
+        if v == "" {
+            continue
         }
+
+        spec = spec + " " + key + " " + v
+        delete(sortmap, key)
+    }
+
+    // Add any negated keys
+    for key, v := range sortmap {
+        spec = spec + " " + key + " " + v
     }
 
     spec = spec + " " + strings.Join(f2[0:i], " ")
