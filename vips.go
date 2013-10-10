@@ -175,7 +175,7 @@ func (s *VipsManager) applyFile(key string, path string) error {
     }
 
     if ipString == "" {
-        if strings.Contains(ipString, ":") {
+        if strings.Contains(key, ":") {
             ipString = key + "/128"
         } else {
             ipString = key + "/32"
