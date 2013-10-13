@@ -1,6 +1,7 @@
 package applyd
 
 import (
+    "bytes"
     "fmt"
     "github.com/fathomdb/gommons"
     "log"
@@ -18,7 +19,15 @@ type VipsState struct {
 
 type Vip struct {
     Ip        string
-    Dest      string
+    Interface string
+}
+
+type IpState struct {
+    Ips []InterfaceIp
+}
+
+type InterfaceIp struct {
+    Ip        net.IP
     Interface string
 }
 
@@ -26,22 +35,6 @@ func NewVipsManager(runtime *Runtime) *VipsManager {
     p := &VipsManager{}
     return p
 }
-
-//func hasIp(dev string, ip string) (found bool, err error) {
-//	cmd := exec.Command("/bin/ip", "address", "show", "dev", dev, "to", ip)
-//
-//	output, err := Execute(cmd)
-//    if err != nil {
-//	    return err
-//    }
-//
-//	result := strings.TrimSpace(string(output))
-//	if result == "" {
-//		return false, nil
-//	}
-//
-//	return true, nil
-//}
 
 func isIpv4(ip net.IP) bool {
     ipv4 := ip.To4()
@@ -60,51 +53,100 @@ func parseIp(s string) (ip net.IP, err error) {
     return ip, nil
 }
 
-func hasIp(dev string, ip net.IP) (found bool, err error) {
-    intf, err := net.InterfaceByName(dev)
+func buildIpMap() (state *IpState, err error) {
+    cmd := exec.Command("/bin/ip", "--oneline", "address", "show")
+
+    output, err := Execute(cmd)
     if err != nil {
-        return false, err
+        return nil, err
     }
 
-    addrs, err := intf.Addrs()
-    if err != nil {
-        return false, err
-    }
+    state = &IpState{}
+    state.Ips = make([]InterfaceIp, 0)
 
-    for _, addr := range addrs {
-        addrIp, err := parseIp(addr.String())
+    for _, line := range strings.Split(string(output), "\n") {
+        line = strings.TrimSpace(line)
+        if line == "" {
+            continue
+        }
+
+        fields := strings.Fields(line)
+        if len(fields) < 3 {
+            return nil, fmt.Errorf("Error parsing line: %s", line)
+        }
+
+        nettype := fields[2]
+        if nettype != "inet" && nettype != "inet6" {
+            continue
+        }
+
+        if len(fields) < 4 {
+            return nil, fmt.Errorf("Error parsing line: %s", line)
+        }
+        intf := fields[1]
+        cidr := fields[3]
+
+        vip := InterfaceIp{}
+        vip.Interface = intf
+        ip, err := parseIp(cidr)
         if err != nil {
-            return false, err
+            log.Print("Error parsing line: ", line)
+            return nil, err
         }
+        vip.Ip = ip
 
-        //log.Printf("Addr %s %s", dev, addrIp.String())
-        if addrIp.Equal(ip) {
-            return true, nil
-        }
+        state.Ips = append(state.Ips, vip)
     }
 
-    return false, nil
+    return state, nil
 }
 
-func findIp(ip net.IP) (found string, err error) {
-    interfaces, err := net.Interfaces()
-    if err != nil {
-        return "", err
-    }
-
-    for _, intf := range interfaces {
-        found, err := hasIp(intf.Name, ip)
-        if err != nil {
-            return "", err
-        }
-
-        if found {
-            return intf.Name, nil
-        }
-    }
-
-    return "", nil
-}
+// It would probably be more efficient to build the ip map using the direct function
+// But there's a golang bug that's blocking us: https://code.google.com/p/go/issues/detail?id=6433
+//func hasIp(dev string, ip net.IP) (found bool, err error) {
+//    intf, err := net.InterfaceByName(dev)
+//    if err != nil {
+//        return false, err
+//    }
+//
+//    addrs, err := intf.Addrs()
+//    if err != nil {
+//        return false, err
+//    }
+//
+//    for _, addr := range addrs {
+//        addrIp, err := parseIp(addr.String())
+//        if err != nil {
+//            return false, err
+//        }
+//
+//        //log.Printf("Addr %s %s", dev, addrIp.String())
+//        if addrIp.Equal(ip) {
+//            return true, nil
+//        }
+//    }
+//
+//    return false, nil
+//}
+//func findIp(ip net.IP) (found string, err error) {
+//    interfaces, err := net.Interfaces()
+//    if err != nil {
+//        return "", err
+//    }
+//
+//    for _, intf := range interfaces {
+//        found, err := hasIp(intf.Name, ip)
+//        if err != nil {
+//            return "", err
+//        }
+//
+//        if found {
+//            return intf.Name, nil
+//        }
+//    }
+//
+//    return "", nil
+//}
 
 func addIp(dev string, ip string) (err error) {
     log.Printf("vips: Adding %s %s", dev, ip)
@@ -146,12 +188,39 @@ func deleteIp(dev string, ip string) (err error) {
     return nil
 }
 
-// TODO: We could probably be more efficient here by using a similar strategy to iptables: collect in bulk
-// But, parsing the ip addr show output is painful!
-func (s *VipsManager) applyFile(key string, path string) error {
+func (s *IpState) findDevicesWithIp(ip net.IP) (devices []string, err error) {
+    devices = make([]string, 0)
+
+    for _, vip := range s.Ips {
+        if bytes.Equal(vip.Ip, ip) {
+            devices = append(devices, vip.Interface)
+        }
+    }
+
+    return devices, nil
+}
+
+func (s *IpState) hasIp(ip net.IP, device string) (found bool, err error) {
+    devices, err := s.findDevicesWithIp(ip)
+    if err != nil {
+        return false, err
+    }
+
+    for _, d := range devices {
+        if device == d {
+            return true, nil
+        }
+    }
+
+    return false, nil
+}
+
+func (s *VipsManager) applyFile(state *IpState, key string, path string) (changed bool, err error) {
+    changed = false
+
     text, err := gommons.TryReadTextFile(path, "")
     if err != nil {
-        return err
+        return changed, err
     }
 
     var device string
@@ -165,7 +234,7 @@ func (s *VipsManager) applyFile(key string, path string) error {
 
         fields := strings.Fields(line)
         if len(fields) < 1 || len(fields) > 2 {
-            return fmt.Errorf("Error parsing line: %s", line)
+            return changed, fmt.Errorf("Error parsing line: %s", line)
         }
 
         device = fields[0]
@@ -184,42 +253,42 @@ func (s *VipsManager) applyFile(key string, path string) error {
 
     ip, err := parseIp(ipString)
     if err != nil {
-        return err
+        return changed, err
     }
 
     if device == "" {
         // Remove the ip
         for {
-            foundDevice, err := findIp(ip)
+            devices, err := state.findDevicesWithIp(ip)
             if err != nil {
-                return err
+                return changed, err
             }
 
-            if foundDevice == "" {
-                break
+            for _, device := range devices {
+                err = deleteIp(device, ipString)
+                if err != nil {
+                    return changed, err
+                }
             }
-
-            err = deleteIp(foundDevice, ipString)
-            if err != nil {
-                return err
-            }
+            changed = true
         }
     } else {
         // Create the ip
-        found, err := hasIp(device, ip)
+        found, err := state.hasIp(ip, device)
         if err != nil {
-            return err
+            return changed, err
         }
 
         if !found {
             err = addIp(device, ipString)
             if err != nil {
-                return err
+                return changed, err
             }
+            changed = true
         }
     }
 
-    return nil
+    return changed, err
 }
 
 func (s *VipsManager) apply(basedir string) error {
@@ -229,12 +298,27 @@ func (s *VipsManager) apply(basedir string) error {
         return err
     }
 
+    var state *IpState
+
     for _, file := range files {
+        if state == nil {
+            state, err = buildIpMap()
+            if err != nil {
+                log.Print("Unable to collect IP state: ", err)
+
+                return err
+            }
+        }
+
         path := basedir + "/" + file
 
-        err := s.applyFile(file, path)
+        changed, err := s.applyFile(state, file, path)
         if err != nil {
             return err
+        }
+
+        if changed {
+            state = nil
         }
     }
 
