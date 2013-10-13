@@ -53,7 +53,7 @@ func main() {
         log.Panicf("Error applying state %v", err)
     }
 
-    err = runtime.Tunnels.Apply("/etc/apply.d/tunnels")
+    err = runtime.Tunnels.Apply("/etc/apply.d/tunnel")
     if err != nil {
         log.Panicf("Error applying tunnels %v", err)
     }
